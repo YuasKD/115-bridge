@@ -1,9 +1,10 @@
 # 部署指南 / Deployment guide
 
-两个 compose 示例：
+两个 compose 示例，外加一个可选 procedure：
 
 - [`../compose.example.yml`](../compose.example.yml)：已有媒体栈时，只加 Bridge 一个容器
 - [`full-stack.compose.yml`](full-stack.compose.yml)：从零起一套参考栈（Seerr + Radarr + Sonarr + Prowlarr + Bridge），版本钉自真实生产部署
+- [`1337x-cloudflare-bypass.md`](1337x-cloudflare-bypass.md)：可选 procedure，Prowlarr 的 1337x 被 Cloudflare 拦死时的旁路方案（FlareSolverr + byparr-proxy，2026-11-24 实测跑通）
 
 ## 前提
 
