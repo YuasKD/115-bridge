@@ -1,0 +1,30 @@
+# 单容器部署示例。复制为 compose.yml，按需修改。
+# 密钥放在 bridge.env（参照 bridge.env.example），不要提交真实值，权限设为 0600。
+services:
+  bridge:
+    image: 115-bridge:0.1.0 # 从 Release 附件 docker load，或本地构建：docker build -t 115-bridge:0.1.0 .
+    container_name: 115-bridge
+    restart: unless-stopped
+    # Python 在容器里是 PID 1，没有默认的信号处理；init 进程负责转发信号并回收子进程，作为兜底。
+    init: true
+    # 取回或校验进行中时，sha1 线程需要时间收尾；给足优雅退出时间，避免 10 秒后被 SIGKILL。
+    stop_grace_period: 60s
+    ports:
+      - "8080:8080" # qBit API 与 Web 页面，与 config.yml 里的 webui.port 一致
+    env_file:
+      - bridge.env
+    environment:
+      PUID: "1024"
+      PGID: "100" # 按 NAS 共享文件夹的实际授权组设置；部分 NAS 只授权特定 gid
+      UMASK: "000"
+      # 时区：只影响 docker logs 时间戳；页面绝对时间跟随浏览器时区。按需打开：
+      # TZ: Asia/Shanghai
+      # 若为 Telegram 设了 HTTP_PROXY/HTTPS_PROXY（写在 bridge.env 里），必须同时设置 NO_PROXY，
+      # 包含局域网地址与 127.0.0.1，例如：NO_PROXY=127.0.0.1,localhost,<你的局域网 CIDR>
+      # （Arr 客户端不读环境代理，健康检查也绕过代理；CDN 下载仍会读环境代理。）
+    volumes:
+      - /path/to/media:/data # 下载目录与媒体库同一个卷；Arr 以相同路径访问（NFS 时两侧挂载路径一致）
+      # SQLite、cookie、config.yml 放这个本地目录（不要放网络盘）。
+      # 先创建该目录并把 config.yml（参照 config.example.yml）放进去，
+      # 否则启动时会报「找不到配置文件」。左侧路径按实际情况修改。
+      - /path/to/115-bridge/config:/config

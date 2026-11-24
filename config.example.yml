@@ -1,0 +1,47 @@
+# 复制到 /config/config.yml。这里不放密钥（密钥只从环境变量读，见 bridge.env.example）。
+# 除 webui.username 与 arr 外，下面的值都是默认值。
+webui:
+  port: 8080
+  username: admin # 必填；Arr 添加下载客户端时填写
+  history_retention_days: 7 # Web 失败/成功历史保留天数，0 关闭两区；只影响 Web 可见性
+
+paths:
+  root: /data/downloads/115 # 完成后的保存根目录
+  incomplete: /data/downloads/115/.incomplete # 必须与 root 在同一文件系统
+  state: /config # SQLite 和 cookie，放本地卷
+
+# category -> Arr 名字（保存路径和回退用）。Arr 里下载客户端的 category 要与左边一致。
+categories:
+  radarr: radarr
+  tv-sonarr: sonarr
+
+# Arr 的名字对应环境变量 <NAME>_API_KEY：radarr -> RADARR_API_KEY，sonarr -> SONARR_API_KEY
+# url 是示例地址，请按 Arr 的实际地址修改
+arr:
+  radarr:
+    url: http://radarr.example.lan:7878
+    type: radarr
+  sonarr:
+    url: http://sonarr.example.lan:8989
+    type: sonarr
+
+cloud:
+  root_dir: /115-bridge
+  timeout_hours: 12
+  poll_seconds: 60
+  quota_min: 20
+  space_min_gib: 100
+
+api:
+  rate_per_second: 1
+  burst: 3
+
+fetch:
+  connections_per_file: 2
+  max_files: 1
+  download_app: android
+  min_free_gib: 50
+  max_retries: 5
+
+verify:
+  max_retries: 2

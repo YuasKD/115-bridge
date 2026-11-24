@@ -1,0 +1,90 @@
+# 全流程参考部署：Seerr + Radarr + Sonarr + Prowlarr + 115 Bridge
+# 版本钉自一套真实生产部署；路径/密钥全部为占位符，按你的环境修改。
+# 密钥放 bridge.env（参照 ../bridge.env.example），权限 0600，不要提交真实值。
+#
+# 关键约束：
+# - 所有服务共享同一个媒体卷 /path/to/media，且容器内路径一致（/data），
+#   Arr 与 Bridge 之间不需要 remote path mapping；跨主机时用 NFS 挂同一路径。
+# - Bridge 的 /config 放本地盘（SQLite/cookie），不要放网络盘。
+# - Arr 里添加 qBittorrent 客户端指向 bridge:8080，category 分别 radarr / tv-sonarr，
+#   开启 Remove Completed；Seerr 连接 Radarr/Sonarr；Prowlarr 同步索引器到两 Arr。
+services:
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "5055:5055"
+    volumes:
+      - /path/to/configs/seerr:/app/config
+    depends_on:
+      - radarr
+      - sonarr
+
+  radarr:
+    image: linuxserver/radarr:6.4.4.10685-ls327
+    container_name: radarr
+    restart: unless-stopped
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      UMASK: "000"
+      TZ: Asia/Shanghai
+    ports:
+      - "7878:7878"
+    volumes:
+      - /path/to/configs/radarr:/config
+      - /path/to/media:/data
+    depends_on:
+      - prowlarr
+
+  sonarr:
+    image: linuxserver/sonarr:4.0.20.3014-ls5
+    container_name: sonarr
+    restart: unless-stopped
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      UMASK: "000"
+      TZ: Asia/Shanghai
+    ports:
+      - "8989:8989"
+    volumes:
+      - /path/to/configs/sonarr:/config
+      - /path/to/media:/data
+    depends_on:
+      - prowlarr
+
+  prowlarr:
+    image: linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Asia/Shanghai
+    ports:
+      - "9696:9696"
+    volumes:
+      - /path/to/configs/prowlarr:/config
+
+  bridge:
+    image: 115-bridge:0.1.0 # Release 附件 docker load，或 docker build -t 115-bridge:0.1.0 .
+    container_name: 115-bridge
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 60s
+    ports:
+      - "8080:8080"
+    env_file:
+      - bridge.env
+    environment:
+      PUID: "1024" # 与媒体卷上现有文件属主一致；按 NAS 共享授权组调整 PGID
+      PGID: "100"
+      UMASK: "000"
+      TZ: Asia/Shanghai
+    volumes:
+      - /path/to/media:/data
+      - /path/to/configs/115-bridge:/config
